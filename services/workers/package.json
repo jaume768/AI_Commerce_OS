@@ -1,0 +1,28 @@
+{
+  "name": "workers",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.25.0",
+    "pg": "^8.13.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^11.3.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.55.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@ai-commerce-os/shared": "workspace:*",
+    "@ai-commerce-os/connectors": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0",
+    "@types/node": "^20.17.0",
+    "@types/pg": "^8.11.0"
+  }
+}

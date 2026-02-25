@@ -1,0 +1,48 @@
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import fp from 'fastify-plugin';
+import { query } from '../db';
+
+async function tenantPluginFn(app: FastifyInstance) {
+  app.decorate('extractTenant', async function (request: FastifyRequest, reply: FastifyReply) {
+    const storeId = request.headers['x-store-id'] as string;
+    if (!storeId) {
+      return reply.status(400).send({ error: 'Missing x-store-id header' });
+    }
+
+    const user = request.user as { sub: string; email: string };
+
+    const rows = await query(
+      `SELECT m.role, s.id as store_id, s.slug, s.status as store_status
+       FROM memberships m
+       JOIN stores s ON s.id = m.store_id
+       WHERE m.user_id = $1 AND m.store_id = $2`,
+      [user.sub, storeId],
+    );
+
+    if (rows.length === 0) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'No access to this store' });
+    }
+
+    const membership = rows[0] as any;
+    if (membership.store_status !== 'active') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Store is not active' });
+    }
+
+    (request as any).storeId = storeId;
+    (request as any).role = membership.role;
+    (request as any).storeSlug = membership.slug;
+  });
+}
+
+export const tenantPlugin = fp(tenantPluginFn, { name: 'tenant-plugin' });
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    extractTenant: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+  interface FastifyRequest {
+    storeId?: string;
+    role?: string;
+    storeSlug?: string;
+  }
+}

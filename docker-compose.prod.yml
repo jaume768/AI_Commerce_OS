@@ -1,0 +1,48 @@
+# Production skeleton — extend with real values, secrets management, etc.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  redis:
+    restart: always
+
+  api-node:
+    restart: always
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    # Remove volume mounts in production
+    volumes: []
+
+  worker:
+    restart: always
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    volumes: []
+
+  agent-service:
+    restart: always
+    environment:
+      LOG_LEVEL: info
+    volumes: []
+
+  dashboard-next:
+    restart: always
+    environment:
+      NODE_ENV: production
+    volumes: []
+
+  # Disable MinIO in production (use real AWS S3)
+  minio:
+    profiles:
+      - disabled
+  minio-init:
+    profiles:
+      - disabled
