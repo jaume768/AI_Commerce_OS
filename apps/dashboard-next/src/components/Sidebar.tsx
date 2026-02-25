@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users, Webhook } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -16,6 +16,7 @@ const shopifyItems = [
   { href: '/dashboard/shopify/products', label: 'Products', icon: Package },
   { href: '/dashboard/shopify/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/dashboard/shopify/customers', label: 'Customers', icon: Users },
+  { href: '/dashboard/shopify/webhooks', label: 'Webhooks', icon: Webhook },
 ];
 
 export default function Sidebar() {

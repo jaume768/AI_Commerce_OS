@@ -11,7 +11,7 @@ export type {
   ObjectMetadata,
 } from './storage/types';
 
-export { createShopifyConnector } from './shopify/index';
+export { createShopifyConnector, verifyShopifyWebhookHMAC } from './shopify/index';
 export type {
   ShopifyConnector,
   ShopifyConfig,
@@ -22,6 +22,7 @@ export type {
   ShopifyCustomer,
   ShopifyShop,
   ShopifyCollection,
+  ShopifyWebhook,
   ShopifyListParams,
   ShopifyPaginatedResult,
 } from './shopify/index';

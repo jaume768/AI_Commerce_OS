@@ -117,6 +117,16 @@ export interface ShopifyCollection {
   [key: string]: unknown;
 }
 
+export interface ShopifyWebhook {
+  id: number;
+  topic: string;
+  address: string;
+  format: string;
+  created_at: string;
+  updated_at: string;
+  [key: string]: unknown;
+}
+
 export interface ShopifyListParams {
   limit?: number;
   page_info?: string;
@@ -152,9 +162,34 @@ export interface ShopifyConnector {
   // Collections
   listCollections(params?: ShopifyListParams): Promise<ShopifyPaginatedResult<ShopifyCollection>>;
   // Webhooks
-  createWebhook(topic: string, address: string): Promise<unknown>;
+  createWebhook(topic: string, address: string): Promise<ShopifyWebhook>;
+  listWebhooks(): Promise<ShopifyWebhook[]>;
+  deleteWebhook(id: number): Promise<void>;
+  // GraphQL mutations
+  graphql<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T>;
   // Raw request
   request<T = unknown>(method: string, path: string, body?: unknown): Promise<T>;
+}
+
+// --- HMAC verification for webhook payloads ---
+export function verifyShopifyWebhookHMAC(
+  rawBody: Buffer | string,
+  hmacHeader: string,
+  secret: string,
+): boolean {
+  try {
+    const crypto = require('crypto') as typeof import('crypto');
+    const digest = crypto
+      .createHmac('sha256', secret)
+      .update(typeof rawBody === 'string' ? rawBody : rawBody)
+      .digest('base64');
+    const a = Buffer.from(digest);
+    const b = Buffer.from(hmacHeader);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 function parseLinkHeader(header: string | null): { next?: string; previous?: string } {
@@ -402,11 +437,43 @@ export function createShopifyConnector(config: ShopifyConfig): ShopifyConnector 
     },
 
     // === Webhooks ===
-    async createWebhook(topic: string, address: string): Promise<unknown> {
-      const { data } = await shopifyFetch<{ webhook: unknown }>('POST', '/webhooks.json', {
+    async createWebhook(topic: string, address: string): Promise<ShopifyWebhook> {
+      const { data } = await shopifyFetch<{ webhook: ShopifyWebhook }>('POST', '/webhooks.json', {
         webhook: { topic, address, format: 'json' },
       });
       return data.webhook;
+    },
+
+    async listWebhooks(): Promise<ShopifyWebhook[]> {
+      const { data } = await shopifyFetch<{ webhooks: ShopifyWebhook[] }>('GET', '/webhooks.json');
+      return data.webhooks;
+    },
+
+    async deleteWebhook(id: number): Promise<void> {
+      await shopifyFetch<unknown>('DELETE', `/webhooks/${id}.json`);
+    },
+
+    // === GraphQL ===
+    async graphql<T = unknown>(gqlQuery: string, variables?: Record<string, unknown>): Promise<T> {
+      const token = await getAccessToken();
+      const url = `${shopOrigin}/admin/api/${apiVersion}/graphql.json`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Shopify-Access-Token': token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: gqlQuery, variables }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Shopify GraphQL failed (${res.status}): ${text}`);
+      }
+      const json = (await res.json()) as { data: T; errors?: unknown[] };
+      if (json.errors && (json.errors as unknown[]).length > 0) {
+        throw new Error(`Shopify GraphQL errors: ${JSON.stringify(json.errors)}`);
+      }
+      return json.data;
     },
   };
 }

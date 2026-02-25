@@ -13,6 +13,7 @@ import { taskRoutes } from './routes/tasks';
 import { approvalRoutes } from './routes/approvals';
 import { assetRoutes } from './routes/assets';
 import { shopifyRoutes } from './routes/shopify';
+import { shopifyWebhookRoutes } from './routes/shopify-webhooks';
 
 const log = createLogger('api-node');
 
@@ -43,6 +44,8 @@ async function main() {
   await app.register(approvalRoutes);
   await app.register(assetRoutes);
   await app.register(shopifyRoutes);
+  // Webhook routes registered in separate scope (custom JSON parser for HMAC)
+  await app.register(shopifyWebhookRoutes);
 
   // Start
   const host = '0.0.0.0';
