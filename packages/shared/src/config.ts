@@ -47,6 +47,16 @@ const FeatureFlagEnvSchema = z.object({
   ENABLE_RLS: z.coerce.boolean().default(false),
 });
 
+const ShopifyEnvSchema = z.object({
+  SHOPIFY_SHOP_DOMAIN: z.string().optional(),
+  SHOPIFY_API_VERSION: z.string().default('2024-10'),
+  // Legacy: static access token (shpat_xxx)
+  SHOPIFY_ACCESS_TOKEN: z.string().optional(),
+  // Dev Dashboard: client credentials flow
+  SHOPIFY_CLIENT_ID: z.string().optional(),
+  SHOPIFY_CLIENT_SECRET: z.string().optional(),
+});
+
 export const ApiEnvSchema = BaseEnvSchema
   .merge(DatabaseEnvSchema)
   .merge(RedisEnvSchema)
@@ -55,7 +65,8 @@ export const ApiEnvSchema = BaseEnvSchema
   .merge(OtelEnvSchema)
   .merge(CorsEnvSchema)
   .merge(RateLimitEnvSchema)
-  .merge(FeatureFlagEnvSchema);
+  .merge(FeatureFlagEnvSchema)
+  .merge(ShopifyEnvSchema);
 
 export const WorkerEnvSchema = BaseEnvSchema
   .merge(DatabaseEnvSchema)

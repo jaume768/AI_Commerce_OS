@@ -12,7 +12,19 @@ export type {
 } from './storage/types';
 
 export { createShopifyConnector } from './shopify/index';
-export type { ShopifyConnector, ShopifyConfig, ShopifyProduct } from './shopify/index';
+export type {
+  ShopifyConnector,
+  ShopifyConfig,
+  ShopifyProduct,
+  ShopifyVariant,
+  ShopifyOrder,
+  ShopifyLineItem,
+  ShopifyCustomer,
+  ShopifyShop,
+  ShopifyCollection,
+  ShopifyListParams,
+  ShopifyPaginatedResult,
+} from './shopify/index';
 
 export { createMetaConnector } from './meta/index';
 export type { MetaConnector, MetaAdsConfig, MetaCampaign } from './meta/index';

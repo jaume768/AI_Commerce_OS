@@ -107,6 +107,11 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       DRY_RUN: ${DRY_RUN:-true}
       ENABLE_RLS: ${ENABLE_RLS:-false}
+      SHOPIFY_SHOP_DOMAIN: ${SHOPIFY_SHOP_DOMAIN:-}
+      SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+      SHOPIFY_CLIENT_ID: ${SHOPIFY_CLIENT_ID:-}
+      SHOPIFY_CLIENT_SECRET: ${SHOPIFY_CLIENT_SECRET:-}
+      SHOPIFY_API_VERSION: ${SHOPIFY_API_VERSION:-2024-10}
     depends_on:
       postgres:
         condition: service_healthy

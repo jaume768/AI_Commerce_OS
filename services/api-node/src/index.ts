@@ -12,6 +12,7 @@ import { authRoutes } from './routes/auth';
 import { taskRoutes } from './routes/tasks';
 import { approvalRoutes } from './routes/approvals';
 import { assetRoutes } from './routes/assets';
+import { shopifyRoutes } from './routes/shopify';
 
 const log = createLogger('api-node');
 
@@ -41,6 +42,7 @@ async function main() {
   await app.register(taskRoutes);
   await app.register(approvalRoutes);
   await app.register(assetRoutes);
+  await app.register(shopifyRoutes);
 
   // Start
   const host = '0.0.0.0';
