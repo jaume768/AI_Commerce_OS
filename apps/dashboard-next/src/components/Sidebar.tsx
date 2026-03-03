@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users, Webhook, Radio } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users, Webhook, Radio, Bot, History } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -54,6 +54,28 @@ export default function Sidebar() {
         </div>
         {shopifyItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard/shopify' && pathname.startsWith(item.href));
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                isActive
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <div className="pt-4 pb-1">
+          <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Agents</p>
+        </div>
+        {[{ href: '/dashboard/agents', label: 'Agents', icon: Bot }, { href: '/dashboard/agents/runs', label: 'Agent Runs', icon: History }].map((item) => {
+          const isActive = pathname === item.href || (item.href !== '/dashboard/agents' && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
             <Link

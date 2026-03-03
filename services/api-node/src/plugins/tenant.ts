@@ -9,7 +9,15 @@ async function tenantPluginFn(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Missing x-store-id header' });
     }
 
-    const user = request.user as { sub: string; email: string };
+    const user = request.user as { sub: string; email?: string; type?: string; role?: string };
+
+    // Service tokens (agent-service) bypass membership lookup
+    if (user.type === 'service') {
+      (request as any).storeId = storeId;
+      (request as any).role = user.role || 'admin';
+      (request as any).storeSlug = 'service';
+      return;
+    }
 
     const rows = await query(
       `SELECT m.role, s.id as store_id, s.slug, s.status as store_status

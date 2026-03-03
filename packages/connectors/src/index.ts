@@ -53,4 +53,13 @@ export type {
 } from './tiktok/index';
 
 export { createLLMConnector } from './llm/index';
-export type { LLMConnector, LLMConfig, LLMResponse, ImageGenResponse } from './llm/index';
+export type {
+  LLMConnector,
+  LLMConfig,
+  LLMMessage,
+  LLMToolDefinition,
+  LLMToolCall,
+  LLMResponse,
+  ImageGenConfig,
+  ImageGenResponse,
+} from './llm/index';
