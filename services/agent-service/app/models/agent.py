@@ -46,6 +46,7 @@ class AgentContext:
     goal: dict[str, Any] | None = None
     task: dict[str, Any] | None = None
     params: dict[str, Any] = field(default_factory=dict)
+    user_note: str | None = None
 
 
 @dataclass

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bot, Play, History, Power, PowerOff, Loader2, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import { Bot, Play, History, Power, PowerOff, Loader2, AlertTriangle, Clock, CheckCircle2, X, MessageSquare } from 'lucide-react';
 
 interface AgentInfo {
   name: string;
@@ -40,6 +40,8 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
   const [runningAgent, setRunningAgent] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [showRunModal, setShowRunModal] = useState<string | null>(null);
+  const [userNote, setUserNote] = useState('');
 
   const token = (session as any)?.accessToken;
   const storeId = (session as any)?.storeId;
@@ -86,10 +88,20 @@ export default function AgentsPage() {
     }
   };
 
+  const openRunModal = (name: string) => {
+    setUserNote('');
+    setShowRunModal(name);
+  };
+
   const runAgent = async (name: string) => {
+    setShowRunModal(null);
     setRunningAgent(name);
     setError('');
     try {
+      const payload: Record<string, unknown> = { agent_name: name };
+      if (userNote.trim()) {
+        payload.user_note = userNote.trim();
+      }
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents/run`, {
         method: 'POST',
         headers: {
@@ -97,7 +109,7 @@ export default function AgentsPage() {
           'x-store-id': storeId,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ agent_name: name }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || 'Run failed');
@@ -110,6 +122,7 @@ export default function AgentsPage() {
       setError(err.message);
     } finally {
       setRunningAgent(null);
+      setUserNote('');
     }
   };
 
@@ -213,7 +226,7 @@ export default function AgentsPage() {
 
             <div className="flex gap-2">
               <button
-                onClick={() => runAgent(agent.name)}
+                onClick={() => openRunModal(agent.name)}
                 disabled={!agent.enabled || runningAgent === agent.name}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
@@ -234,6 +247,58 @@ export default function AgentsPage() {
           </div>
         ))}
       </div>
+      {/* Run Agent Modal */}
+      {showRunModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Play className="w-5 h-5 text-brand-600" />
+                Run {showRunModal}
+              </h3>
+              <button
+                onClick={() => setShowRunModal(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 transition"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                <MessageSquare className="w-4 h-4 text-gray-400" />
+                Note for the agent
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={userNote}
+                onChange={(e) => setUserNote(e.target.value)}
+                placeholder="e.g. Focus on orders from the last 24h, check refund #1052, ignore test orders..."
+                rows={3}
+                maxLength={1000}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">{userNote.length}/1000</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRunModal(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => runAgent(showRunModal)}
+                className="flex-1 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Run Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

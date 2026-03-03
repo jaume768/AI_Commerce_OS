@@ -3,11 +3,11 @@ import { healthCheck as dbHealth } from '../db';
 import { taskQueue } from '../queue';
 
 export async function healthRoutes(app: FastifyInstance) {
-  app.get('/health', async () => {
+  app.get('/health', { logLevel: 'silent' }, async () => {
     return { status: 'ok', service: 'api-node', timestamp: new Date().toISOString() };
   });
 
-  app.get('/ready', async (_req, reply) => {
+  app.get('/ready', { logLevel: 'warn' }, async (_req, reply) => {
     const db = await dbHealth();
     let redis = false;
     try {

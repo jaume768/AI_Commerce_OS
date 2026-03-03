@@ -2,7 +2,8 @@ import json
 import structlog
 from datetime import datetime
 from uuid import uuid4
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -52,6 +53,29 @@ app = FastAPI(
     version="0.6.0",
     lifespan=lifespan,
 )
+
+
+# ============================================================
+# Internal auth middleware — verifies INTERNAL_AUTH_TOKEN
+# Skips /health and /ready endpoints
+# ============================================================
+
+@app.middleware("http")
+async def verify_internal_auth(request: Request, call_next):
+    # Allow health/ready without auth
+    if request.url.path in ("/health", "/ready", "/docs", "/openapi.json"):
+        return await call_next(request)
+
+    token = settings.INTERNAL_AUTH_TOKEN
+    if token:
+        auth_header = request.headers.get("authorization", "")
+        if not auth_header.startswith("Bearer ") or auth_header[7:] != token:
+            return JSONResponse(
+                status_code=401,
+                content={"error": "Unauthorized", "message": "Invalid or missing internal auth token"},
+            )
+
+    return await call_next(request)
 
 
 # ============================================================
@@ -175,6 +199,7 @@ async def run_agent(body: RunAgentRequest):
         trigger=TriggerType.MANUAL,
         dry_run=body.dry_run if body.dry_run is not None else settings.DRY_RUN,
         params=body.params,
+        user_note=body.user_note,
     )
 
     runner = AgentRunner()
@@ -269,8 +294,14 @@ async def list_runs(
 
 
 @app.get("/agents/runs/{run_id}", response_model=AgentRunDetailResponse)
-async def get_run_detail(run_id: str):
-    row = await db.fetch_one("SELECT * FROM agent_runs WHERE id = $1::uuid", run_id)
+async def get_run_detail(run_id: str, store_id: Optional[str] = Query(None)):
+    if store_id:
+        row = await db.fetch_one(
+            "SELECT * FROM agent_runs WHERE id = $1::uuid AND store_id = $2",
+            run_id, store_id,
+        )
+    else:
+        row = await db.fetch_one("SELECT * FROM agent_runs WHERE id = $1::uuid", run_id)
     if not row:
         raise HTTPException(status_code=404, detail="Run not found")
 

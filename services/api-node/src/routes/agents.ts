@@ -6,6 +6,7 @@ import { createLogger } from '@ai-commerce-os/shared';
 const log = createLogger('api-node');
 
 const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL || 'http://agent-service:8000';
+const INTERNAL_AUTH_TOKEN = process.env.INTERNAL_AUTH_TOKEN || '';
 
 async function proxyToAgentService(
   method: string,
@@ -20,9 +21,14 @@ async function proxyToAgentService(
     }
   }
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (INTERNAL_AUTH_TOKEN) {
+    headers['Authorization'] = `Bearer ${INTERNAL_AUTH_TOKEN}`;
+  }
+
   const res = await fetch(url.toString(), {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
@@ -71,13 +77,14 @@ export async function agentRoutes(app: FastifyInstance) {
     preHandler: [requireRole('admin')],
   }, async (request, reply) => {
     const storeId = (request as any).storeId;
-    const body = request.body as { agent_name: string; params?: Record<string, unknown>; dry_run?: boolean };
+    const body = request.body as { agent_name: string; params?: Record<string, unknown>; dry_run?: boolean; user_note?: string };
 
     const { status, data } = await proxyToAgentService('POST', '/agents/run', {
       agent_name: body.agent_name,
       store_id: storeId,
       params: body.params || {},
       dry_run: body.dry_run,
+      user_note: body.user_note || null,
     });
 
     return reply.status(status).send(data);
@@ -101,7 +108,8 @@ export async function agentRoutes(app: FastifyInstance) {
   // === Get run detail ===
   app.get('/agents/runs/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { status, data } = await proxyToAgentService('GET', `/agents/runs/${id}`);
+    const storeId = (request as any).storeId;
+    const { status, data } = await proxyToAgentService('GET', `/agents/runs/${id}`, undefined, { store_id: storeId });
     return reply.status(status).send(data);
   });
 

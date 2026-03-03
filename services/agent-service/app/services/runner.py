@@ -35,23 +35,31 @@ class AgentRunner:
             return AgentResult(success=False, error="Agent is disabled (kill switch)")
 
         # Create agent_run record
+        input_payload = {**ctx.params}
+        if ctx.user_note:
+            input_payload["user_note"] = ctx.user_note
+
         await db.execute(
             """
             INSERT INTO agent_runs (id, store_id, agent_name, status, trigger, input_payload, dry_run)
             VALUES ($1::uuid, $2, $3, 'running', $4, $5, $6)
             """,
             ctx.run_id, ctx.store_id, agent.name, ctx.trigger.value,
-            json.dumps(ctx.params), ctx.dry_run,
+            json.dumps(input_payload), ctx.dry_run,
         )
 
         # Audit log: run started
+        audit_changes: dict = {"agent": agent.name, "trigger": ctx.trigger.value, "dry_run": ctx.dry_run}
+        if ctx.user_note:
+            audit_changes["user_note"] = ctx.user_note
+
         await db.execute(
             """
             INSERT INTO audit_logs (store_id, entity_type, entity_id, action, actor_type, changes, run_id)
             VALUES ($1, 'agent_run', $2::uuid, 'started', 'agent', $3, $2::uuid)
             """,
             ctx.store_id, ctx.run_id,
-            json.dumps({"agent": agent.name, "trigger": ctx.trigger.value, "dry_run": ctx.dry_run}),
+            json.dumps(audit_changes),
         )
 
         try:
@@ -142,8 +150,13 @@ class AgentRunner:
         tokens: TokenUsage,
     ) -> tuple[str, list[ActionItem]]:
         """Run the LLM tool-calling loop until the model stops calling tools."""
+        # If there's a user note from the operator, append it to the system prompt
+        effective_prompt = system_prompt
+        if ctx.user_note:
+            effective_prompt += f"\n\n--- OPERATOR NOTE ---\nThe store operator has left the following note for this run. Take it into account:\n\"{ctx.user_note}\"\n--- END NOTE ---"
+
         messages: list[LLMMessage] = [
-            LLMMessage(role="system", content=system_prompt),
+            LLMMessage(role="system", content=effective_prompt),
             LLMMessage(role="user", content=user_message),
         ]
         actions: list[ActionItem] = []

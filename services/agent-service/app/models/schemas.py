@@ -8,6 +8,7 @@ class RunAgentRequest(BaseModel):
     store_id: str
     params: dict[str, Any] = {}
     dry_run: Optional[bool] = None
+    user_note: Optional[str] = None
 
 
 class RunAgentResponse(BaseModel):

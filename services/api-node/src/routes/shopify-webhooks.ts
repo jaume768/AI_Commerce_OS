@@ -7,6 +7,19 @@ import { sendTrackingPurchase, sendTrackingRefund } from '../tracking';
 
 const log = createLogger('shopify-webhooks');
 
+// --- PII masking helper ---
+function maskEmail(email: string | undefined | null): string {
+  if (!email || typeof email !== 'string') return '***';
+  const [local, domain] = email.split('@');
+  if (!domain) return '***';
+  return `${local[0]}***@${domain[0]}***`;
+}
+
+function maskName(name: string | undefined | null): string {
+  if (!name || typeof name !== 'string') return '***';
+  return name.length > 1 ? `${name[0]}***` : '***';
+}
+
 // Topics we handle
 const SUPPORTED_TOPICS = [
   'orders/create',
@@ -60,14 +73,15 @@ export async function shopifyWebhookRoutes(app: FastifyInstance) {
 
     // HMAC verification
     const secret = (config as any).SHOPIFY_CLIENT_SECRET || (config as any).SHOPIFY_WEBHOOK_SECRET;
-    if (secret) {
-      const rawBody = (request.body as any).__rawBody as Buffer;
-      if (!rawBody || !verifyShopifyWebhookHMAC(rawBody, hmacHeader, secret)) {
-        log.warn({ topic, shopDomain }, 'Webhook HMAC verification failed');
-        return reply.status(401).send({ error: 'HMAC verification failed' });
-      }
-    } else {
-      log.warn('No webhook secret configured — skipping HMAC verification');
+    if (!secret) {
+      log.error('No webhook secret configured — rejecting webhook for security');
+      return reply.status(500).send({ error: 'Webhook secret not configured' });
+    }
+
+    const rawBody = (request.body as any).__rawBody as Buffer;
+    if (!rawBody || !verifyShopifyWebhookHMAC(rawBody, hmacHeader, secret)) {
+      log.warn({ topic, shopDomain }, 'Webhook HMAC verification failed');
+      return reply.status(401).send({ error: 'HMAC verification failed' });
     }
 
     // Remove raw body before processing
@@ -207,7 +221,7 @@ async function handleOrderCreate(storeId: string, payload: Record<string, unknow
       name: order.name,
       total_price: order.total_price,
       currency: order.currency,
-      customer_email: order.email,
+      customer_email: maskEmail(order.email),
       items_count: order.line_items?.length,
     })],
   );
@@ -353,15 +367,15 @@ async function handleProductDelete(storeId: string, payload: Record<string, unkn
 
 async function handleCustomerChange(storeId: string, topic: string, payload: Record<string, unknown>) {
   const customer = payload as any;
-  log.info({ storeId, customerId: customer.id, email: customer.email, topic }, 'Customer change');
+  log.info({ storeId, customerId: customer.id, email: maskEmail(customer.email), topic }, 'Customer change');
 
   await query(
     `INSERT INTO audit_logs (store_id, entity_type, entity_id, action, actor_type, changes)
      VALUES ($1, 'customer', $2, $3, 'webhook', $4)`,
     [storeId, customer.id?.toString(), `shopify_${topic.replace('/', '_')}`, JSON.stringify({
-      email: customer.email,
-      first_name: customer.first_name,
-      last_name: customer.last_name,
+      email: maskEmail(customer.email),
+      first_name: maskName(customer.first_name),
+      last_name: maskName(customer.last_name),
       orders_count: customer.orders_count,
     })],
   );

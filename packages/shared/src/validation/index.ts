@@ -39,11 +39,31 @@ export const UpdateApprovalSchema = z.object({
 });
 export type UpdateApprovalInput = z.infer<typeof UpdateApprovalSchema>;
 
+export const PasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one digit');
+
 export const LoginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(1),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;
+
+export const RegisterSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1).max(200),
+  password: PasswordSchema,
+});
+export type RegisterInput = z.infer<typeof RegisterSchema>;
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: PasswordSchema,
+});
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 
 export const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

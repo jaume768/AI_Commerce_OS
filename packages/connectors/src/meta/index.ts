@@ -173,9 +173,12 @@ export function createMetaConnector(config: MetaConfig): MetaConnector {
       body.test_event_code = testEventCode;
     }
 
-    const res = await fetch(`${baseUrl}?access_token=${accessToken}`, {
+    const res = await fetch(baseUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
       body: JSON.stringify(body),
     });
 

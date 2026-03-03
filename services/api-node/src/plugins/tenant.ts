@@ -11,11 +11,26 @@ async function tenantPluginFn(app: FastifyInstance) {
 
     const user = request.user as { sub: string; email?: string; type?: string; role?: string };
 
-    // Service tokens (agent-service) bypass membership lookup
+    // Service tokens (agent-service) — verify store exists but skip membership
     if (user.type === 'service') {
+      if (!user.role) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Service token must specify a role' });
+      }
+      const allowedServiceRoles = ['admin', 'editor', 'viewer'];
+      if (!allowedServiceRoles.includes(user.role)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Invalid service token role' });
+      }
+      // Verify the store actually exists and is active
+      const storeRows = await query(
+        `SELECT id, slug, status FROM stores WHERE id = $1`,
+        [storeId],
+      );
+      if (storeRows.length === 0 || (storeRows[0] as any).status !== 'active') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Store not found or inactive' });
+      }
       (request as any).storeId = storeId;
-      (request as any).role = user.role || 'admin';
-      (request as any).storeSlug = 'service';
+      (request as any).role = user.role;
+      (request as any).storeSlug = (storeRows[0] as any).slug || 'service';
       return;
     }
 

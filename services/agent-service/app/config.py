@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     API_NODE_URL: str = "http://api-node:4000"
     API_NODE_TOKEN: str = ""
 
+    # Internal auth — token that api-node must send to call agent-service
+    INTERNAL_AUTH_TOKEN: str = ""
+
     # S3 / MinIO
     S3_ENDPOINT: str = "http://minio:9000"
     S3_ACCESS_KEY: str = "minioadmin"
