@@ -3,6 +3,7 @@ import { verifyShopifyWebhookHMAC } from '@ai-commerce-os/connectors';
 import { createLogger } from '@ai-commerce-os/shared';
 import { query, queryOne } from '../db';
 import { config } from '../config';
+import { sendTrackingPurchase, sendTrackingRefund } from '../tracking';
 
 const log = createLogger('shopify-webhooks');
 
@@ -146,7 +147,7 @@ async function processWebhookEvent(
         await handleOrderCreate(storeId, payload);
         break;
       case 'orders/paid':
-        await handleOrderPaid(storeId, payload);
+        await handleOrderPaid(storeId, payload, eventId);
         break;
       case 'orders/updated':
         await handleOrderUpdated(storeId, payload);
@@ -155,7 +156,7 @@ async function processWebhookEvent(
         await handleOrderCancelled(storeId, payload);
         break;
       case 'refunds/create':
-        await handleRefundCreate(storeId, payload);
+        await handleRefundCreate(storeId, payload, eventId);
         break;
       case 'fulfillments/create':
       case 'fulfillments/update':
@@ -212,7 +213,7 @@ async function handleOrderCreate(storeId: string, payload: Record<string, unknow
   );
 }
 
-async function handleOrderPaid(storeId: string, payload: Record<string, unknown>) {
+async function handleOrderPaid(storeId: string, payload: Record<string, unknown>, webhookEventId?: string) {
   const order = payload as any;
   log.info({ storeId, orderId: order.id, name: order.name }, 'Order paid');
 
@@ -225,6 +226,31 @@ async function handleOrderPaid(storeId: string, payload: Record<string, unknown>
       financial_status: order.financial_status,
     })],
   );
+
+  // Fase 3: Send Purchase event to Meta CAPI + TikTok Events API
+  const customer = order.customer || {};
+  const shippingAddress = order.shipping_address || {};
+  sendTrackingPurchase(storeId, {
+    id: order.id,
+    email: order.email || customer.email,
+    phone: customer.phone || shippingAddress.phone,
+    firstName: customer.first_name || shippingAddress.first_name,
+    lastName: customer.last_name || shippingAddress.last_name,
+    city: shippingAddress.city,
+    state: shippingAddress.province_code,
+    zip: shippingAddress.zip,
+    country: shippingAddress.country_code,
+    totalPrice: order.total_price || '0',
+    currency: order.currency || 'EUR',
+    lineItems: (order.line_items || []).map((li: any) => ({
+      productId: li.product_id,
+      title: li.title,
+      quantity: li.quantity,
+      price: li.price,
+    })),
+  }, webhookEventId).catch((err) => {
+    log.error({ storeId, orderId: order.id, err: err.message }, 'Tracking Purchase failed');
+  });
 }
 
 async function handleOrderUpdated(storeId: string, payload: Record<string, unknown>) {
@@ -256,7 +282,7 @@ async function handleOrderCancelled(storeId: string, payload: Record<string, unk
   );
 }
 
-async function handleRefundCreate(storeId: string, payload: Record<string, unknown>) {
+async function handleRefundCreate(storeId: string, payload: Record<string, unknown>, webhookEventId?: string) {
   const refund = payload as any;
   log.info({ storeId, refundId: refund.id, orderId: refund.order_id }, 'Refund created');
 
@@ -269,6 +295,18 @@ async function handleRefundCreate(storeId: string, payload: Record<string, unkno
       transactions_count: refund.transactions?.length,
     })],
   );
+
+  // Fase 3: Send Refund event to Meta CAPI
+  const totalRefund = (refund.transactions || []).reduce(
+    (sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0,
+  );
+  sendTrackingRefund(storeId, {
+    orderId: refund.order_id,
+    totalRefund: totalRefund > 0 ? String(totalRefund) : undefined,
+    currency: refund.currency,
+  }, webhookEventId).catch((err) => {
+    log.error({ storeId, refundId: refund.id, err: err.message }, 'Tracking Refund failed');
+  });
 }
 
 async function handleFulfillment(storeId: string, topic: string, payload: Record<string, unknown>) {

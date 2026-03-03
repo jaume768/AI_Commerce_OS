@@ -27,11 +27,30 @@ export type {
   ShopifyPaginatedResult,
 } from './shopify/index';
 
-export { createMetaConnector } from './meta/index';
-export type { MetaConnector, MetaAdsConfig, MetaCampaign } from './meta/index';
+export { createMetaConnector, generateEventId } from './meta/index';
+export type {
+  MetaConnector,
+  MetaConfig,
+  MetaCampaign,
+  MetaServerEvent,
+  MetaEventResponse,
+  MetaUserData,
+  MetaCustomData,
+  MetaEventName,
+} from './meta/index';
 
-export { createTikTokConnector } from './tiktok/index';
-export type { TikTokConnector, TikTokAdsConfig, TikTokCampaign } from './tiktok/index';
+export { createTikTokConnector, generateTikTokEventId } from './tiktok/index';
+export type {
+  TikTokConnector,
+  TikTokConfig,
+  TikTokCampaign,
+  TikTokServerEvent,
+  TikTokEventResponse,
+  TikTokUserData,
+  TikTokProperties,
+  TikTokContentItem,
+  TikTokEventName,
+} from './tiktok/index';
 
 export { createLLMConnector } from './llm/index';
 export type { LLMConnector, LLMConfig, LLMResponse, ImageGenResponse } from './llm/index';

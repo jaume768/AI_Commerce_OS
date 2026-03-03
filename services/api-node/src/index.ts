@@ -14,6 +14,7 @@ import { approvalRoutes } from './routes/approvals';
 import { assetRoutes } from './routes/assets';
 import { shopifyRoutes } from './routes/shopify';
 import { shopifyWebhookRoutes } from './routes/shopify-webhooks';
+import { trackingRoutes } from './routes/tracking';
 
 const log = createLogger('api-node');
 
@@ -44,6 +45,7 @@ async function main() {
   await app.register(approvalRoutes);
   await app.register(assetRoutes);
   await app.register(shopifyRoutes);
+  await app.register(trackingRoutes);
   // Webhook routes registered in separate scope (custom JSON parser for HMAC)
   await app.register(shopifyWebhookRoutes);
 

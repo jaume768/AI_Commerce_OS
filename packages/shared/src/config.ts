@@ -57,6 +57,24 @@ const ShopifyEnvSchema = z.object({
   SHOPIFY_CLIENT_SECRET: z.string().optional(),
 });
 
+const MetaTrackingEnvSchema = z.object({
+  META_PIXEL_ID: z.string().optional(),
+  META_ACCESS_TOKEN: z.string().optional(),
+  META_API_VERSION: z.string().default('v21.0'),
+  META_TEST_EVENT_CODE: z.string().optional(),
+});
+
+const TikTokTrackingEnvSchema = z.object({
+  TIKTOK_PIXEL_ID: z.string().optional(),
+  TIKTOK_ACCESS_TOKEN: z.string().optional(),
+  TIKTOK_TEST_EVENT_CODE: z.string().optional(),
+});
+
+const TrackingEnvSchema = z.object({
+  TRACKING_ENABLED: z.coerce.boolean().default(false),
+  STORE_URL: z.string().optional(),
+});
+
 export const ApiEnvSchema = BaseEnvSchema
   .merge(DatabaseEnvSchema)
   .merge(RedisEnvSchema)
@@ -66,7 +84,10 @@ export const ApiEnvSchema = BaseEnvSchema
   .merge(CorsEnvSchema)
   .merge(RateLimitEnvSchema)
   .merge(FeatureFlagEnvSchema)
-  .merge(ShopifyEnvSchema);
+  .merge(ShopifyEnvSchema)
+  .merge(MetaTrackingEnvSchema)
+  .merge(TikTokTrackingEnvSchema)
+  .merge(TrackingEnvSchema);
 
 export const WorkerEnvSchema = BaseEnvSchema
   .merge(DatabaseEnvSchema)

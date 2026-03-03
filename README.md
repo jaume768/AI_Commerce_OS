@@ -507,6 +507,17 @@ Body de ejemplo:
 | `GET` | `/shopify/webhook-events` | Ver eventos recibidos (filtrable por topic/status) |
 | `POST` | `/webhooks/shopify` | **Receptor** — endpoint donde Shopify envía los eventos |
 
+### Tracking — Fase 3
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/tracking/status` | Estado de configuración (Meta, TikTok, enabled) |
+| `POST` | `/tracking/meta/test` | Test de conexión Meta CAPI (admin) |
+| `POST` | `/tracking/tiktok/test` | Test de conexión TikTok Events API (admin) |
+| `POST` | `/tracking/test-event` | Enviar evento de prueba a todas las plataformas (admin) |
+| `GET` | `/tracking/events` | Historial de eventos enviados (filtrable por platform/status) |
+| `GET` | `/tracking/stats` | Estadísticas de eventos por plataforma |
+
 ---
 
 ## Comandos Make
@@ -625,6 +636,46 @@ Cada webhook recibido se verifica con HMAC-SHA256 usando tu `SHOPIFY_CLIENT_SECR
 
 ---
 
+## Tracking — Fase 3
+
+### Descripción
+
+El sistema envía eventos server-side a **Meta Conversions API (CAPI)** y **TikTok Events API** cuando ocurren conversiones en tu tienda. Esto complementa los pixels del navegador y mejora la atribución (especialmente con adblockers e iOS 14+).
+
+### Eventos que se envían automáticamente
+
+| Webhook Shopify | Evento Meta CAPI | Evento TikTok |
+|-----------------|------------------|---------------|
+| `orders/paid` | `Purchase` | `CompletePayment` |
+| `refunds/create` | `Refund` (custom) | — |
+
+### Configuración
+
+1. **En Shopify**: Instala el canal "Facebook & Instagram" y activa data sharing al máximo
+2. **En Meta Events Manager**: Obtén tu Pixel ID y crea un System User Token con permisos `ads_management`
+3. **En tu `.env`**:
+
+```env
+TRACKING_ENABLED=true
+STORE_URL=https://tu-tienda.myshopify.com
+META_PIXEL_ID=123456789
+META_ACCESS_TOKEN=EAAxxxxxxx
+META_TEST_EVENT_CODE=TEST12345  # solo para dev
+```
+
+4. Reinicia los servicios: `make rebuild`
+5. Ve al dashboard → **Tracking** → **Test Connection** para verificar
+
+### Seguridad de datos (PII)
+
+Todos los datos personales (email, teléfono, nombre, dirección) se hashean con **SHA-256** antes de enviarse a Meta/TikTok, cumpliendo con sus requisitos de privacidad. Los datos originales nunca salen de tu servidor.
+
+### Test Mode
+
+Configura `META_TEST_EVENT_CODE` con el código de tu pestaña "Test Events" en Meta Events Manager. Los eventos aparecerán ahí en tiempo real sin afectar tus datos de producción.
+
+---
+
 ## Observabilidad
 
 Para activar el stack de observabilidad:
@@ -724,14 +775,9 @@ Si sigues teniendo conflictos, detén tus servicios locales o cambia los puertos
 - **Fase 0** — Preparación: nicho elegido, tienda creada
 - **Fase 1** — Shopify: productos cargados, moneda, impuestos, envíos
 - **Fase 2** — Dominio y estética mínima del theme
+- **Fase 3** — Tracking y canales: Meta CAPI, TikTok Events API, UTMs (ver sección Tracking)
 - **Fase 4** — Infraestructura: monorepo, Docker, auth multi-tenant, RBAC, DB, S3, workers, dashboard
 - **Fase 5** — Integraciones Shopify: conector REST/GraphQL, OAuth auto-token, webhooks, dashboard pages
-
-### Fase 3 — Tracking y canales (en progreso)
-
-- Meta Pixel + Conversions API
-- TikTok Pixel + Events API
-- Convención UTMs y naming
 
 ### Fase 6 — Agentes MVP (próximo)
 
