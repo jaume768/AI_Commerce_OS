@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users, Webhook, Radio, Bot, History } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ShieldCheck, LogOut, Store, Package, ShoppingCart, Users, Webhook, Radio, Bot, History, Megaphone } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -92,6 +92,26 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        <div className="pt-4 pb-1">
+          <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ads</p>
+        </div>
+        {(() => {
+          const isActive = pathname.startsWith('/dashboard/ads/meta');
+          return (
+            <Link
+              href="/dashboard/ads/meta"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                isActive
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Megaphone className="w-5 h-5" />
+              Meta Ads
+            </Link>
+          );
+        })()}
 
         <div className="pt-4 pb-1">
           <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tracking</p>

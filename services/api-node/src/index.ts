@@ -16,6 +16,7 @@ import { shopifyRoutes } from './routes/shopify';
 import { shopifyWebhookRoutes } from './routes/shopify-webhooks';
 import { trackingRoutes } from './routes/tracking';
 import { agentRoutes } from './routes/agents';
+import { metaAdsRoutes } from './routes/meta-ads';
 
 const log = createLogger('api-node');
 
@@ -48,6 +49,7 @@ async function main() {
   await app.register(shopifyRoutes);
   await app.register(trackingRoutes);
   await app.register(agentRoutes);
+  await app.register(metaAdsRoutes);
   // Webhook routes registered in separate scope (custom JSON parser for HMAC)
   await app.register(shopifyWebhookRoutes);
 

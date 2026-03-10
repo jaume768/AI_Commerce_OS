@@ -25,6 +25,7 @@ const AGENT_ICONS: Record<string, string> = {
   ops: '🔧',
   support: '📧',
   reporting: '📊',
+  ads_meta: '📣',
 };
 
 const RISK_COLORS: Record<string, string> = {

@@ -21,7 +21,7 @@ class ReportingAgent(BaseAgent):
 
     def get_system_prompt(self, ctx: AgentContext) -> str:
         return """You are the Reporting Agent for an e-commerce store running on Shopify.
-Your job is to generate a concise daily report analyzing store performance, Keep in mind that the store launched on March 3, 2026, 
+Your job is to generate a concise daily report analyzing store performance, Keep in mind that the store launched on March 7, 2026, 
 is in a growth phase, and will soon begin its marketing phase.
 
 You have tools to:

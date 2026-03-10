@@ -33,7 +33,7 @@ class AnthropicProvider(LLMProvider):
                     "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json",
                 },
-                timeout=120.0,
+                timeout=300.0,
             )
         return self._client
 
@@ -93,7 +93,7 @@ class AnthropicProvider(LLMProvider):
         result = await self._request_with_retry(body)
         return result
 
-    async def _request_with_retry(self, body: dict, max_retries: int = 3) -> LLMResult:
+    async def _request_with_retry(self, body: dict, max_retries: int = 5) -> LLMResult:
         last_error: Exception | None = None
         for attempt in range(max_retries):
             try:
@@ -101,7 +101,8 @@ class AnthropicProvider(LLMProvider):
                 resp = await client.post("/v1/messages", json=body)
 
                 if resp.status_code == 429:
-                    delay = min(2 ** attempt * 2, 30)
+                    retry_after = resp.headers.get("retry-after")
+                    delay = int(retry_after) if retry_after and retry_after.isdigit() else min(2 ** attempt * 3, 60)
                     log.warning("anthropic_rate_limited", delay=delay, attempt=attempt)
                     await asyncio.sleep(delay)
                     continue
